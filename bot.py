@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
@@ -7,7 +6,8 @@ from PIL import Image
 from io import BytesIO
 from db import create_db, save_user, save_image
 
-ADMIN_ID = 123456789  # ← غيّره إلى ID مالك تيليجرام
+BOT_TOKEN = '8450932466:AAGjj_auOTK8bU_NPeeorEiClSwxtmSnYaA'
+ADMIN_ID = 324184664
 user_data = {}
 
 def get_main_keyboard():
@@ -192,6 +192,38 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def admin_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
+        if update.effective_user.id != ADMIN_ID:
         return
 
-    conn = sqlite
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) FROM users")
+    user_count = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM images")
+    image_count = c.fetchone()[0]
+
+    c.execute("SELECT user_id, file_id FROM images ORDER BY uploaded_at DESC LIMIT 1")
+    last_image = c.fetchone()
+
+    conn.close()
+
+    msg = f"👥 عدد المستخدمين: {user_count}\n📸 عدد الصور: {image_count}"
+    await update.message.reply_text(msg)
+
+    if last_image:
+        await update.message.reply_photo(last_image[1], caption=f"آخر صورة من المستخدم: {last_image[0]}")
+       
+        def main():
+    create_db()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("admin", admin_handler))
+    app.add_handler(MessageHandler(filters.PHOTO, image_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
+    app.add_handler(CallbackQueryHandler(button_handler))
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
