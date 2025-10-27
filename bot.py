@@ -1,25 +1,28 @@
 import os
-from telegram import Update, InputMediaPhoto, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from PIL import Image
 from io import BytesIO
 
-# تخزين الصور مؤقتًا
+# تخزين الصور لكل مستخدم
 user_images = {}
 
 # زر البداية
 def get_main_keyboard():
     return InlineKeyboardMarkup([[InlineKeyboardButton("📤 ارسل صور", callback_data="start")]])
 
+# أمر /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("اهلا بيك! ارسللي صورك حتى احولها PDF", reply_markup=get_main_keyboard())
 
+# التعامل ويا الضغط على الزر
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == "start":
         await query.edit_message_text("ارسللي الصور وحدة وحدة، ولما تخلص كلي /done")
 
+# استقبال الصور
 async def image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     photo = update.message.photo[-1]
@@ -28,6 +31,7 @@ async def image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_images.setdefault(user_id, []).append(image_bytes)
     await update.message.reply_text("✅ صورة انضافت. كلي /done لما تخلص.")
 
+# أمر /done لتحويل الصور إلى PDF
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     images = user_images.get(user_id, [])
@@ -43,9 +47,11 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_document(document=pdf_bytes, filename="converted.pdf")
     user_images[user_id] = []
 
+# أمر /help
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("كلي /start وبلّش ترسل صورك، ولما تخلص كلي /done")
 
+# تشغيل البوت
 def main():
     bot_token = os.getenv("BOT_TOKEN")
     app = ApplicationBuilder().token(bot_token).build()
