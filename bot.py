@@ -20,6 +20,11 @@ def get_main_keyboard():
         [InlineKeyboardButton("📤 شارك البوت", switch_inline_query="")]
     ])
 
+def get_show_menu_button():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📤 تم الإرسال، عرض الخيارات", callback_data="menu")]
+    ])
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id] = {"images": [], "filename": f"pdf_from_{update.effective_user.first_name}.pdf"}
@@ -49,6 +54,9 @@ async def image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await photo.get_file()
     image_bytes = await file.download_as_bytearray()
     user_data.setdefault(user_id, {"images": [], "filename": "converted.pdf"})["images"].append(image_bytes)
+
+    if len(user_data[user_id]["images"]) == 1:
+        await update.message.reply_text("✅ صورة انضافت!\n📤 لما تكمل إرسال الصور، اضغط الزر 👇", reply_markup=get_show_menu_button())
 
 async def list_images(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -157,7 +165,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
 
     if data == "send":
-        await query.edit_message_text("📤 ارسل صورة وحدة وحدة، ولما تخلص استخدم الأزرار 👇")
+        await query.edit_message_text("📤 ارسل صورة وحدة وحدة، ولما تخلص اضغط الزر 👇", reply_markup=get_show_menu_button())
     elif data == "list":
         await list_images(update, context)
     elif data == "rename":
