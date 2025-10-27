@@ -192,7 +192,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def admin_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
-        if update.effective_user.id != ADMIN_ID:
         return
 
     conn = sqlite3.connect("users.db")
@@ -214,8 +213,8 @@ async def admin_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if last_image:
         await update.message.reply_photo(last_image[1], caption=f"آخر صورة من المستخدم: {last_image[0]}")
-       
-        def main():
+
+def main():
     create_db()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
