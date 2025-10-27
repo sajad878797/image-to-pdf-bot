@@ -47,13 +47,16 @@ async def image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await photo.get_file()
     image_bytes = await file.download_as_bytearray()
     user_data.setdefault(user_id, {"images": [], "filename": "converted.pdf"})["images"].append(image_bytes)
-    await update.message.reply_text("✅ صورة انضافت. استخدم زر 'عرض الصور' لترتيبها.")
+    await update.message.reply_text(
+        "✅ صورة انضافت!\n📚 تقدر ترتب الصور، تغيّر الاسم، أو تحوّلها إلى PDF باستخدام الأزرار 👇",
+        reply_markup=get_main_keyboard()
+    )
 
 async def list_images(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     images = user_data.get(user_id, {}).get("images", [])
     if not images:
-        await update.callback_query.edit_message_text("ماكو صور بعد.")
+        await update.callback_query.edit_message_text("ماكو صور بعد.", reply_markup=get_main_keyboard())
         return
 
     buttons = []
@@ -73,7 +76,7 @@ async def reorder_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     images = user_data.get(user_id, {}).get("images", [])
     if not images:
-        await query.edit_message_text("ماكو صور بعد.")
+        await query.edit_message_text("ماكو صور بعد.", reply_markup=get_main_keyboard())
         return
 
     if data.startswith("up_"):
@@ -98,9 +101,12 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         new_name = update.message.text.strip()
         if new_name:
             user_data[user_id]["filename"] = f"{new_name}.pdf"
-            await update.message.reply_text(f"✅ تم تغيير الاسم إلى: {new_name}.pdf", reply_markup=get_main_keyboard())
+            await update.message.reply_text(
+                f"✅ تم تغيير الاسم إلى: {new_name}.pdf\n📸 تقدر تضيف صور أو ترتبها قبل التحويل 👇",
+                reply_markup=get_main_keyboard()
+            )
         else:
-            await update.message.reply_text("❌ الاسم فارغ. حاول مرة ثانية.")
+            await update.message.reply_text("❌ الاسم فارغ. حاول مرة ثانية.", reply_markup=get_main_keyboard())
         context.user_data["awaiting_filename"] = False
 
 async def confirm_clear_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -113,12 +119,18 @@ async def confirm_clear_handler(update: Update, context: ContextTypes.DEFAULT_TY
 async def clear_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id]["images"] = []
-    await update.callback_query.edit_message_text("🗑 تم حذف كل الصور.", reply_markup=get_main_keyboard())
+    await update.callback_query.edit_message_text(
+        "🗑 تم حذف كل الصور.\n📤 ارسل صور جديدة أو غيّر اسم الملف قبل التحويل 👇",
+        reply_markup=get_main_keyboard()
+    )
 
 async def reset_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id] = {"images": [], "filename": f"pdf_from_{update.effective_user.first_name}.pdf"}
-    await update.callback_query.edit_message_text("🔄 تم البدء من جديد! ارسل صورك أو استخدم الأزرار 👇", reply_markup=get_main_keyboard())
+    await update.callback_query.edit_message_text(
+        "🔄 تم البدء من جديد!\n📤 ارسل أول صورة، وبعدها تقدر ترتب وتحوّل 👇",
+        reply_markup=get_main_keyboard()
+    )
 
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -126,7 +138,7 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filename = user_data.get(user_id, {}).get("filename", "converted.pdf")
 
     if not images:
-        await update.callback_query.edit_message_text("ماكو صور بعد.")
+        await update.callback_query.edit_message_text("ماكو صور بعد.", reply_markup=get_main_keyboard())
         return
 
     pdf_bytes = BytesIO()
@@ -156,7 +168,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
 
     if data == "send":
-        await query.edit_message_text("📤 ارسل صورة وحدة وحدة، ولما تخلص استخدم زر 'تحويل إلى PDF'")
+        await query.edit_message_text("📤 ارسل صورة وحدة وحدة، ولما تخلص استخدم الأزرار 👇", reply_markup=get_main_keyboard())
     elif data == "list":
         await list_images(update, context)
     elif data == "rename":
@@ -181,9 +193,4 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, image_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
-    app.add_handler(CallbackQueryHandler(button_handler))
-
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+    app.add_handler(CallbackQueryHandler(button_handler
