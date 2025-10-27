@@ -5,10 +5,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from PIL import Image
 from io import BytesIO
 
-# تخزين الصور والمعلومات لكل مستخدم
 user_data = {}
 
-# توليد لوحة التحكم الرئيسية
 def get_main_keyboard():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📤 ارسل صورة", callback_data="send")],
@@ -17,10 +15,9 @@ def get_main_keyboard():
         [InlineKeyboardButton("✅ تحويل إلى PDF", callback_data="done")],
         [InlineKeyboardButton("🗑 حذف الكل", callback_data="confirm_clear")],
         [InlineKeyboardButton("🔄 بدء من جديد", callback_data="reset")],
-        [InlineKeyboardButton("📤 مشاركة البوت", url="https://t.me/YOUR_BOT_USERNAME")]
+        [InlineKeyboardButton("📤 مشاركة البوت", url="https://t.me/PDF97IQBOT")]
     ])
 
-# أمر /start برسالة حسب الوقت
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id] = {"images": [], "filename": f"pdf_from_{update.effective_user.first_name}.pdf"}
@@ -44,7 +41,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(welcome_text, reply_markup=get_main_keyboard())
 
-# استقبال الصور
 async def image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     photo = update.message.photo[-1]
@@ -53,7 +49,6 @@ async def image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data.setdefault(user_id, {"images": [], "filename": "converted.pdf"})["images"].append(image_bytes)
     await update.message.reply_text("✅ صورة انضافت. استخدم زر 'عرض الصور' لترتيبها.")
 
-# عرض الصور بأزرار ترتيب
 async def list_images(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     images = user_data.get(user_id, {}).get("images", [])
@@ -70,7 +65,6 @@ async def list_images(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons.append([InlineKeyboardButton("🔙 رجوع", callback_data="menu")])
     await update.callback_query.edit_message_text("رتّب الصور باستخدام الأزرار:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# التعامل مع أزرار الترتيب
 async def reorder_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     query = update.callback_query
@@ -93,13 +87,11 @@ async def reorder_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await list_images(update, context)
 
-# تغيير اسم الملف
 async def rename_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("✏️ اكتب الاسم الجديد للملف (بدون .pdf):")
     context.user_data["awaiting_filename"] = True
 
-# استقبال الاسم الجديد
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if context.user_data.get("awaiting_filename"):
@@ -111,7 +103,6 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ الاسم فارغ. حاول مرة ثانية.")
         context.user_data["awaiting_filename"] = False
 
-# تأكيد قبل الحذف
 async def confirm_clear_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons = [
         [InlineKeyboardButton("✅ نعم، احذف", callback_data="clear")],
@@ -119,19 +110,16 @@ async def confirm_clear_handler(update: Update, context: ContextTypes.DEFAULT_TY
     ]
     await update.callback_query.edit_message_text("هل أنت متأكد من حذف كل الصور؟", reply_markup=InlineKeyboardMarkup(buttons))
 
-# حذف الصور
 async def clear_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id]["images"] = []
     await update.callback_query.edit_message_text("🗑 تم حذف كل الصور.", reply_markup=get_main_keyboard())
 
-# بدء من جديد
 async def reset_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id] = {"images": [], "filename": f"pdf_from_{update.effective_user.first_name}.pdf"}
     await update.callback_query.edit_message_text("🔄 تم البدء من جديد! ارسل صورك أو استخدم الأزرار 👇", reply_markup=get_main_keyboard())
 
-# تحويل الصور إلى PDF
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     images = user_data.get(user_id, {}).get("images", [])
@@ -155,14 +143,13 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     share_button = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📤 مشاركة البوت", url="https://t.me/YOUR_BOT_USERNAME")],
+        [InlineKeyboardButton("📤 مشاركة البوت", url="https://t.me/PDF97IQBOT")],
         [InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="menu")]
     ])
 
     await update.callback_query.message.reply_text(summary, reply_markup=share_button)
     user_data[user_id]["images"] = []
 
-# التعامل مع الأزرار العامة
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -187,10 +174,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("up_") or data.startswith("down_"):
         await reorder_handler(update, context)
 
-# تشغيل البوت
 def main():
     bot_token = os.getenv("BOT_TOKEN")
     app = ApplicationBuilder().token(bot_token).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.PHOTO, image_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
+    app.add_handler(CallbackQueryHandler(button_handler))
+
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
