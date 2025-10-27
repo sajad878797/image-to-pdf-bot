@@ -1,10 +1,13 @@
 import os
+import sqlite3
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from PIL import Image
 from io import BytesIO
+from db import create_db, save_user, save_image
 
+ADMIN_ID = 123456789  # ← غيّره إلى ID مالك تيليجرام
 user_data = {}
 
 def get_main_keyboard():
@@ -28,6 +31,7 @@ def get_show_menu_button():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_data[user_id] = {"images": [], "filename": f"pdf_from_{update.effective_user.first_name}.pdf"}
+    save_user(update.effective_user)
 
     hour = datetime.now().hour
     if hour < 12:
@@ -54,9 +58,10 @@ async def image_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await photo.get_file()
     image_bytes = await file.download_as_bytearray()
     user_data.setdefault(user_id, {"images": [], "filename": "converted.pdf"})["images"].append(image_bytes)
+    save_image(user_id, photo)
 
     if len(user_data[user_id]["images"]) == 1:
-        await update.message.reply_text("✅ صورة انضافت!\n📤 لما تكمل إرسال الصور، اضغط الزر 👇", reply_markup=get_show_menu_button())
+        await update.message.reply_text("✅ صورة انضافت!\n📤 لما تخلص إرسال الصور، اضغط الزر 👇", reply_markup=get_show_menu_button())
 
 async def list_images(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -185,16 +190,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("up_") or data.startswith("down_"):
         await reorder_handler(update, context)
 
-def main():
-    bot_token = os.getenv("BOT_TOKEN")
-    app = ApplicationBuilder().token(bot_token).build()
+async def admin_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        return
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.PHOTO, image_handler))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
-    app.add_handler(CallbackQueryHandler(button_handler))
-
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+    conn = sqlite
